@@ -57,6 +57,14 @@ HELP
   exit 0
 }
 
+# Require that a flag has a value argument following it
+require_arg() {
+  if [[ $# -lt 2 || -z "${2:-}" ]]; then
+    echo "Error: $1 requires a value" >&2
+    exit 1
+  fi
+}
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -64,22 +72,27 @@ while [[ $# -gt 0 ]]; do
       show_help
       ;;
     -C|--cd)
+      require_arg "$1" "${2:-}"
       WORKDIR="$2"
       shift 2
       ;;
     -o|--output-last-message)
+      require_arg "$1" "${2:-}"
       OUTPUT="$2"
       shift 2
       ;;
     -s|--sandbox)
+      require_arg "$1" "${2:-}"
       SANDBOX="$2"
       shift 2
       ;;
     -m|--model)
+      require_arg "$1" "${2:-}"
       MODEL="$2"
       shift 2
       ;;
     -i|--image)
+      require_arg "$1" "${2:-}"
       IMAGES+=("$2")
       shift 2
       ;;
@@ -92,10 +105,12 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --name)
+      require_arg "$1" "${2:-}"
       NAME="$2"
       shift 2
       ;;
     --prompt-file)
+      require_arg "$1" "${2:-}"
       PROMPT_FILE="$2"
       shift 2
       ;;
@@ -108,7 +123,24 @@ while [[ $# -gt 0 ]]; do
       shift
       break
       ;;
+    # Known codex flags that take a value — pass through with their arg
+    --add-dir|--output-schema|-p|--profile|-c|--config|--color)
+      require_arg "$1" "${2:-}"
+      EXTRA_ARGS+=("$1" "$2")
+      shift 2
+      ;;
+    # Known codex flags that are boolean — pass through alone
+    --json|--full-auto|--skip-git-repo-check|--oss|--dangerously-bypass-approvals-and-sandbox)
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
+    --enable|--disable|--local-provider)
+      require_arg "$1" "${2:-}"
+      EXTRA_ARGS+=("$1" "$2")
+      shift 2
+      ;;
     -*)
+      # Unknown flag — pass through as boolean (no value consumed)
       EXTRA_ARGS+=("$1")
       shift
       ;;
