@@ -21,7 +21,7 @@ interclode/
 │   └── dispatch.sh          # Core wrapper around `codex exec`
 ├── skills/
 │   └── delegate/
-│       └── SKILL.md         # Delegation protocol (7-step workflow)
+│       └── SKILL.md         # Delegation protocol (Steps 0–7 + 6b retry)
 ├── CLAUDE.md                # Quick reference (auto-loaded by Claude Code)
 ├── AGENTS.md                # This file (read natively by Codex CLI)
 └── README.md                # GitHub landing page
@@ -104,9 +104,9 @@ dispatch.sh [OPTIONS] --prompt-file <file>
 
 Known Codex flags are explicitly handled to prevent the arg parser from misinterpreting their values:
 
-**Value flags** (consume next arg): `--add-dir`, `--output-schema`, `-p`/`--profile`, `-c`/`--config`, `--color`, `--enable`, `--disable`, `--local-provider`
+**Value flags** (consume next arg): `--add-dir`, `--output-schema`, `-p`/`--profile`, `-c`/`--config`, `--color`, `-a`/`--ask-for-approval`, `--enable`, `--disable`, `--local-provider`
 
-**Boolean flags** (no value): `--json`, `--full-auto`, `--skip-git-repo-check`, `--oss`, `--dangerously-bypass-approvals-and-sandbox`
+**Boolean flags** (no value): `--json`, `--full-auto`, `--skip-git-repo-check`, `--oss`, `--dangerously-bypass-approvals-and-sandbox`, `--yolo`, `--search`, `--no-alt-screen`
 
 Unknown `-*` flags are passed through as boolean (no value consumed). If you need to pass an unknown flag with a value, use `--` to separate it from dispatch.sh's parser.
 

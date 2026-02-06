@@ -109,15 +109,13 @@ After agents complete, run the full verification checklist from the delegate ski
 
 If an agent failed, either resume (`codex exec resume --last "fix X"`) or re-dispatch with tighter constraints. See the delegate skill for detailed retry guidance.
 
-### 7. Report
+### 7. Report and Close
 
 Summarize results to the user:
 - What each agent accomplished
 - Which tasks succeeded vs. had issues
 - Verification results (build + test output)
 - Suggested commit message with Co-Authored-By lines
-
-### 8. Close Out
 
 If using beads (`bd`), close completed beads:
 ```bash
