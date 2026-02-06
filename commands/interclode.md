@@ -16,6 +16,15 @@ The user invokes `/interclode` with either:
 
 ## Workflow
 
+### 0. Fetch Codex CLI Docs
+
+**First**, fetch the current Codex CLI reference to ensure you have the latest flags:
+
+```
+WebFetch: https://developers.openai.com/codex/cli/reference/
+Prompt: "Extract all command line options, flags, their types, defaults, and subcommands for codex exec. Include global flags that apply to all subcommands."
+```
+
 ### 1. Analyze and Plan
 
 Determine what work to delegate. Good candidates for Codex delegation:

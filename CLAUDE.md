@@ -8,7 +8,7 @@ Claude Code plugin for cross-AI delegation — dispatch Codex CLI agents for par
 
 ## Status
 
-v0.2.1 — Published via `interclode@interagency-marketplace`
+v0.2.2 — Published via `interclode@interagency-marketplace`
 
 ## Quick Commands
 

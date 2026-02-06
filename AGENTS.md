@@ -4,7 +4,7 @@ Cross-AI delegation plugin for [Claude Code](https://claude.com/claude-code). Di
 
 ## Project Status
 
-- **Version**: 0.2.1
+- **Version**: 0.2.2
 - **Distribution**: `interclode@interagency-marketplace`
 - **Source**: GitHub `mistakeknot/interclode`
 - **License**: MIT
@@ -134,8 +134,9 @@ A warning is printed if the injected content exceeds 20KB. If no doc files are f
 
 ## Delegation Protocol
 
-The SKILL.md defines a 7-step workflow:
+The SKILL.md defines an 8-step workflow:
 
+0. **Fetch Codex CLI Docs** — WebFetch the official CLI reference for latest flags and capabilities
 1. **Identify Tasks** — Analyze work, propose task decomposition to user
 2. **Check File Overlap** — Ensure no two agents write the same file
 3. **Craft Prompts** — Use the standard template with mandatory constraints

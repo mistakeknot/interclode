@@ -1,7 +1,7 @@
 ---
 name: delegate
 description: Delegate tasks to Codex CLI agents for parallel autonomous execution. Use when facing independent bug fixes, implementation tasks, or test generation that can be done in parallel without shared state. Also works for single background tasks.
-version: 0.2.1
+version: 0.2.2
 ---
 
 # Cross-AI Delegation Skill
@@ -25,6 +25,20 @@ Use this skill when ANY of these are true:
 - Tasks where you're unsure what needs to change (research first, then delegate)
 
 ## The Delegation Protocol
+
+### Step 0: Fetch Codex CLI Reference
+
+**BEFORE ANYTHING ELSE**: Fetch the current Codex CLI documentation so you have the latest flags and capabilities:
+
+```
+WebFetch: https://developers.openai.com/codex/cli/reference/
+Prompt: "Extract all command line options, flags, their types, defaults, and subcommands for codex exec. Include global flags that apply to all subcommands."
+```
+
+This ensures you know about new Codex flags (e.g., `--search`, `--ask-for-approval`, `--no-alt-screen`) that may not be listed in dispatch.sh's passthrough yet. Use this knowledge when:
+- Crafting dispatch commands (Step 3-4) — new boolean flags pass through dispatch.sh automatically; new value flags require calling `codex exec` directly
+- Advising on sandbox modes and safety settings
+- Debugging unexpected agent behavior
 
 ### Step 1: Identify Tasks
 
@@ -242,36 +256,42 @@ bd close <id1> <id2> --reason="Fixed by Codex agent, verified by Claude"
 
 ## Codex CLI Reference
 
-```bash
-codex exec [OPTIONS] "PROMPT"
+The full, up-to-date Codex CLI reference was fetched in **Step 0**. Refer to that for the complete flag list.
 
-Key options:
-  -C, --cd <DIR>          Working directory (required)
-  -s, --sandbox <MODE>    read-only | workspace-write | danger-full-access
-  -o, --output-last-message <FILE>  Save agent's final message
-  -m, --model <MODEL>     Override model (default: from config.toml)
-  -i, --image <FILE>      Attach image to prompt (repeatable)
-  --add-dir <DIR>         Grant write access to additional dirs (for monorepos/shared libs)
-  --json                  JSONL output to stdout
-  --full-auto             Shortcut for -s workspace-write
+Key flags for delegation:
 
-Resume a session:
-  codex exec resume <SESSION_ID> "follow-up prompt"
-  codex exec resume --last "follow-up prompt"
+| Flag | Purpose |
+|------|---------|
+| `-C, --cd <DIR>` | Working directory (required) |
+| `-s, --sandbox <MODE>` | `read-only`, `workspace-write`, `danger-full-access` |
+| `-o, --output-last-message <FILE>` | Save agent's final message |
+| `-m, --model <MODEL>` | Override model |
+| `-i, --image <FILE>` | Attach image (repeatable) |
+| `--add-dir <DIR>` | Grant write access to additional directories |
+| `--json` | JSONL output to stdout |
+| `--full-auto` | Shortcut for `-s workspace-write` |
 
-Code review:
-  codex exec review --uncommitted "focus on error handling"
-  codex exec review --base main "review this branch"
-```
+**Resume**: `codex exec resume --last "follow-up"` or `codex exec resume <SESSION_ID> "follow-up"`
 
-**Multi-directory tasks**: When a task needs to modify files outside the `-C` directory (e.g., a shared library in a sibling package), use `--add-dir`:
+**Multi-directory tasks**: Use `--add-dir` when a task needs to write outside `-C`:
 ```bash
 bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
   -C /path/to/project -o /tmp/out.md \
   --add-dir /path/to/shared-lib \
   "Fix the interface mismatch between project and shared-lib"
 ```
-The `--add-dir` flag is passed through to `codex exec` via dispatch.sh's extra args passthrough.
+
+**New/unknown Codex flags**: dispatch.sh passes unknown `-*` flags through as boolean (no value). If the fetched docs show a new **boolean** flag (e.g., `--search`), it works automatically. For new **value** flags, you'll need to update dispatch.sh's passthrough list or call `codex exec` directly:
+```bash
+# Boolean flag — works via dispatch.sh's catch-all
+bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+  -C /path/to/project -o /tmp/out.md \
+  --search "prompt here"
+
+# Value flag — call codex exec directly to avoid dispatch.sh's parser
+codex exec -C /path/to/project -o /tmp/out.md \
+  --new-value-flag somevalue "prompt here"
+```
 
 ## Common Issues
 
