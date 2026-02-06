@@ -1,0 +1,16 @@
+{
+  "name": "interclode",
+  "version": "0.1.0",
+  "description": "Cross-AI delegation — dispatch Codex agents from Claude Code for parallel autonomous work, then review and verify results.",
+  "author": {
+    "name": "mistakeknot"
+  },
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "delegation",
+    "cross-ai",
+    "parallel",
+    "orchestration"
+  ]
+}
