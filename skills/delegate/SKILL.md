@@ -308,3 +308,19 @@ codex exec -C /path/to/project -o /tmp/out.md \
 | Background notifications arrive late | Don't wait for them — poll output files directly with `tail -c` |
 | Agent touches files outside scope | List files explicitly + "only modify listed files" in constraints |
 | Two agents conflict on same file | Check file overlap before dispatching (Step 2) |
+
+## Integration with Clavain
+
+When invoked from a Clavain workflow (e.g., after `clavain:writing-plans` creates a plan):
+
+**Prompt crafting (Step 3)**: Use the plan's task descriptions directly. Each plan task
+already has file lists, success criteria, and step-by-step instructions — these map
+directly to the prompt template's required fields.
+
+**Verification (Step 6)**: After Codex agents complete, consider dispatching Clavain
+review agents for quality gates:
+- `clavain:requesting-code-review` — for code quality review of agent output
+- Spec compliance check — compare agent's changes against the plan task description
+
+**Landing (Step 7)**: After all agents verified, use `clavain:landing-a-change` to
+complete the work (test verification, evidence checklist, commit, push).
