@@ -124,13 +124,13 @@ while [[ $# -gt 0 ]]; do
       break
       ;;
     # Known codex flags that take a value — pass through with their arg
-    --add-dir|--output-schema|-p|--profile|-c|--config|--color)
+    --add-dir|--output-schema|-p|--profile|-c|--config|--color|-a|--ask-for-approval)
       require_arg "$1" "${2:-}"
       EXTRA_ARGS+=("$1" "$2")
       shift 2
       ;;
     # Known codex flags that are boolean — pass through alone
-    --json|--full-auto|--skip-git-repo-check|--oss|--dangerously-bypass-approvals-and-sandbox)
+    --json|--full-auto|--skip-git-repo-check|--oss|--dangerously-bypass-approvals-and-sandbox|--yolo|--search|--no-alt-screen)
       EXTRA_ARGS+=("$1")
       shift
       ;;
