@@ -43,7 +43,7 @@ For each task, craft a detailed prompt that includes:
 - Expected outcome (tests pass, builds clean, etc.)
 - The standard constraints (see delegate skill)
 
-Use `--inject-docs` to auto-prepend the project's CLAUDE.md/AGENTS.md to the prompt:
+Use `--inject-docs` to auto-prepend the project's CLAUDE.md to the prompt (Codex already reads AGENTS.md natively from the `-C` directory):
 
 ```bash
 bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
@@ -69,8 +69,11 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
 - `-C <dir>`: Working directory (REQUIRED — set to the project root)
 - `-o <file>`: Output file for the agent's last message (REQUIRED; supports `{name}` template)
 - `-s <mode>`: Sandbox mode. Use `workspace-write` for most tasks, `danger-full-access` only when needed
-- `--inject-docs`: Auto-prepend CLAUDE.md/AGENTS.md from working dir to prompt
+- `-i <file>`: Attach image to prompt (repeatable, for multimodal tasks)
+- `--inject-docs[=SCOPE]`: Prepend CLAUDE.md from working dir to prompt (default). Use `=agents` or `=all` to include AGENTS.md (usually redundant — Codex reads it natively)
 - `--name <label>`: Label for `{name}` substitution in output path
+- `--prompt-file <file>`: Read prompt from file instead of positional arg (avoids shell escaping)
+- `--dry-run`: Print the constructed command without executing (for debugging prompts)
 - `--help`: Show all options
 
 Launch multiple agents in parallel using `run_in_background: true` on each Bash call.
@@ -95,6 +98,8 @@ After agents complete, run the full verification checklist from the delegate ski
 5. Check diff size is proportional to task scope
 6. Investigate suspiciously large diffs
 
+If an agent failed, either resume (`codex exec resume --last "fix X"`) or re-dispatch with tighter constraints. See the delegate skill for detailed retry guidance.
+
 ### 7. Report
 
 Summarize results to the user:
@@ -114,8 +119,12 @@ bd close <bead-id1> <bead-id2> ... --reason="Fixed by Codex agent, reviewed by C
 
 - **Prompt quality matters most**: A vague prompt produces vague results. Include file paths, function names, and concrete acceptance criteria.
 - **One task per agent**: Don't ask a single agent to fix 3 bugs. Dispatch 3 agents.
-- **Use --inject-docs**: Eliminates manual context boilerplate and ensures agents get the project's conventions.
+- **Use --inject-docs**: Injects CLAUDE.md into the prompt so Codex gets Claude Code-specific project conventions.
 - **Use --name**: Makes output files self-documenting (`interclode-fix-auth.md` vs `codex-output-1.md`).
+- **Use --dry-run**: Preview the full command and prompt before executing, especially useful when `--inject-docs` is on.
+- **Use --prompt-file**: For long, multi-paragraph prompts — avoids shell quoting pain.
+- **Use --add-dir**: For monorepo tasks that need to write to directories outside `-C` (passed through to codex exec).
 - **Set GOCACHE**: For Go projects, add `GOCACHE=/tmp/go-build-cache` to the prompt's instructions if the default cache path has permission issues.
 - **Verify independently**: Never trust an agent's self-reported success. Always run builds and tests yourself.
+- **Resume failed agents**: Use `codex exec resume --last "fix X"` to continue where a failed agent left off.
 - **Review cosmetic changes**: Codex agents sometimes reformat code or adjust alignment. Flag these separately from functional changes.

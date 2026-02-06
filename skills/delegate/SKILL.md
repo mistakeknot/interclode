@@ -1,7 +1,7 @@
 ---
 name: delegate
 description: Delegate tasks to Codex CLI agents for parallel autonomous execution. Use when facing independent bug fixes, implementation tasks, or test generation that can be done in parallel without shared state. Also works for single background tasks.
-version: 0.2.0
+version: 0.2.1
 ---
 
 # Cross-AI Delegation Skill
@@ -85,12 +85,28 @@ You are working on [project name], a [brief description].
 - Run tests with: [test command]
 ```
 
-**Tip**: Use `--inject-docs` on dispatch.sh to auto-prepend CLAUDE.md/AGENTS.md from the project directory, eliminating the need for manual "You are working on X" boilerplate:
+**Tip**: Use `--inject-docs` on dispatch.sh to auto-prepend the project's CLAUDE.md to the prompt. This injects Claude Code-specific instructions that Codex wouldn't otherwise see (Codex already reads AGENTS.md natively from the `-C` directory, so injecting AGENTS.md is redundant):
 ```bash
 bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
   --inject-docs -C /path/to/project \
   --name task1 -o /tmp/interclode-{name}.md \
   "## Task\n[just the task-specific parts]"
+```
+
+**For long prompts**, use `--prompt-file` to avoid shell escaping issues:
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+  --inject-docs -C /path/to/project \
+  --name task1 -o /tmp/interclode-{name}.md \
+  --prompt-file /tmp/task1-prompt.md
+```
+
+**To preview** the full command and injected prompt before executing:
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+  --dry-run --inject-docs -C /path/to/project \
+  --name task1 -o /tmp/interclode-{name}.md \
+  "prompt here"
 ```
 
 ### Step 4: Dispatch
@@ -162,6 +178,32 @@ git diff --stat
 - Introduce subtle bugs
 - Touch files outside the specified scope
 
+### Step 6b: Retry Failed Agents
+
+If an agent fails or partially completes, you have two options:
+
+**Resume the session** (continues where the agent left off — preserves all context):
+```bash
+# Find the session ID from ~/.codex/sessions/YYYY/MM/DD/
+codex exec resume <SESSION_ID> "The tests are still failing because X. Fix only the Y function."
+
+# Or resume the most recent session:
+codex exec resume --last "Tests failed on Z. Try a different approach."
+```
+
+**Re-dispatch from scratch** (fresh start — better when the agent went down a wrong path):
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+  --inject-docs -C /path/to/project \
+  --name fix-auth-retry -o /tmp/interclode-{name}.md \
+  "Previous attempt failed because [reason]. [Updated, more specific prompt]"
+```
+
+**When to resume vs re-dispatch:**
+- Resume when the agent was on the right track but hit a build/test issue
+- Re-dispatch when the agent over-engineered, touched wrong files, or went in the wrong direction
+- Always tighten the constraints in the retry prompt based on what went wrong
+
 ### Step 7: Report and Close
 
 Summarize results to the user with evidence:
@@ -208,6 +250,8 @@ Key options:
   -s, --sandbox <MODE>    read-only | workspace-write | danger-full-access
   -o, --output-last-message <FILE>  Save agent's final message
   -m, --model <MODEL>     Override model (default: from config.toml)
+  -i, --image <FILE>      Attach image to prompt (repeatable)
+  --add-dir <DIR>         Grant write access to additional dirs (for monorepos/shared libs)
   --json                  JSONL output to stdout
   --full-auto             Shortcut for -s workspace-write
 
@@ -219,6 +263,15 @@ Code review:
   codex exec review --uncommitted "focus on error handling"
   codex exec review --base main "review this branch"
 ```
+
+**Multi-directory tasks**: When a task needs to modify files outside the `-C` directory (e.g., a shared library in a sibling package), use `--add-dir`:
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+  -C /path/to/project -o /tmp/out.md \
+  --add-dir /path/to/shared-lib \
+  "Fix the interface mismatch between project and shared-lib"
+```
+The `--add-dir` flag is passed through to `codex exec` via dispatch.sh's extra args passthrough.
 
 ## Common Issues
 
