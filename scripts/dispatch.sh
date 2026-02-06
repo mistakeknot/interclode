@@ -103,6 +103,11 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=true
       shift
       ;;
+    --)
+      # End of options — next arg is the prompt even if it starts with -
+      shift
+      break
+      ;;
     -*)
       EXTRA_ARGS+=("$1")
       shift
@@ -126,6 +131,10 @@ if [[ -n "$PROMPT_FILE" ]]; then
     exit 1
   fi
   PROMPT="$(cat "$PROMPT_FILE")"
+  if [[ -z "$PROMPT" ]]; then
+    echo "Error: Prompt file is empty: $PROMPT_FILE" >&2
+    exit 1
+  fi
 fi
 
 if [[ -z "$PROMPT" ]]; then
@@ -139,6 +148,11 @@ fi
 # Apply --name substitution to output path
 if [[ -n "$NAME" && -n "$OUTPUT" ]]; then
   OUTPUT="${OUTPUT//\{name\}/$NAME}"
+fi
+
+# Warn if {name} still present in output path (--name not provided)
+if [[ -n "$OUTPUT" && "$OUTPUT" == *'{name}'* ]]; then
+  echo "Warning: Output path contains {name} but --name was not provided. Use --name <label> to substitute it." >&2
 fi
 
 # Inject docs from working directory into prompt
@@ -173,7 +187,9 @@ if [[ -n "$INJECT_DOCS" ]]; then
     fi
   fi
 
-  if [[ -n "$DOCS_PREFIX" ]]; then
+  if [[ -z "$DOCS_PREFIX" ]]; then
+    echo "Note: --inject-docs found no docs to inject in $WORKDIR" >&2
+  else
     PREFIX_SIZE=${#DOCS_PREFIX}
     if [[ $PREFIX_SIZE -gt $INJECT_DOCS_WARN_THRESHOLD ]]; then
       echo "Warning: --inject-docs prepending ${PREFIX_SIZE} bytes of context. Consider --inject-docs=claude for smaller prompts." >&2
