@@ -1,7 +1,7 @@
 ---
 name: delegate
 description: Delegate tasks to Codex CLI agents for parallel autonomous execution. Use when facing independent bug fixes, implementation tasks, or test generation that can be done in parallel without shared state. Also works for single background tasks.
-version: 0.2.2
+version: 0.2.3
 ---
 
 # Cross-AI Delegation Skill
@@ -92,6 +92,7 @@ You are working on [project name], a [brief description].
 - Do not add comments, docstrings, or type annotations to unchanged code
 - Do not refactor or rename anything not directly related to the task
 - Keep the fix minimal — prefer 5 clean lines over 50 "proper" lines
+- Do NOT commit or push — leave changes unstaged for review
 - If GOCACHE permission errors occur, use: GOCACHE=/tmp/go-build-cache
 
 ## Environment
@@ -101,7 +102,7 @@ You are working on [project name], a [brief description].
 
 **Tip**: Use `--inject-docs` on dispatch.sh to auto-prepend the project's CLAUDE.md to the prompt. This injects Claude Code-specific instructions that Codex wouldn't otherwise see (Codex already reads AGENTS.md natively from the `-C` directory, so injecting AGENTS.md is redundant):
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   --inject-docs -C /path/to/project \
   --name task1 -o /tmp/interclode-{name}.md \
   "## Task\n[just the task-specific parts]"
@@ -109,7 +110,7 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
 
 **For long prompts**, use `--prompt-file` to avoid shell escaping issues:
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   --inject-docs -C /path/to/project \
   --name task1 -o /tmp/interclode-{name}.md \
   --prompt-file /tmp/task1-prompt.md
@@ -117,7 +118,7 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
 
 **To preview** the full command and injected prompt before executing:
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   --dry-run --inject-docs -C /path/to/project \
   --name task1 -o /tmp/interclode-{name}.md \
   "prompt here"
@@ -125,18 +126,26 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
 
 ### Step 4: Dispatch
 
+**Resolve dispatch.sh path first**: `$CLAUDE_PLUGIN_ROOT` is only available during skill loading — it's NOT exported to the Bash environment. Before building commands, find the absolute path:
+```bash
+# Find dispatch.sh — check installed plugin cache first, then local dev
+DISPATCH=$(find ~/.claude/plugins/cache -path '*/interclode/*/scripts/dispatch.sh' 2>/dev/null | head -1)
+[ -z "$DISPATCH" ] && DISPATCH=$(find ~/projects/interclode -name dispatch.sh -path '*/scripts/*' 2>/dev/null | head -1)
+```
+Then use `$DISPATCH` (or the resolved absolute path) in all subsequent commands.
+
 Use the dispatch script for each task. Launch all agents in parallel:
 
 ```bash
 # Agent 1
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   --inject-docs -C /path/to/project \
   --name fix-auth -o /tmp/interclode-{name}.md \
   -s workspace-write \
   "prompt for task 1"
 
 # Agent 2 (parallel)
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   --inject-docs -C /path/to/project \
   --name add-tests -o /tmp/interclode-{name}.md \
   -s workspace-write \
@@ -207,7 +216,7 @@ codex exec resume --last "Tests failed on Z. Try a different approach."
 
 **Re-dispatch from scratch** (fresh start — better when the agent went down a wrong path):
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   --inject-docs -C /path/to/project \
   --name fix-auth-retry -o /tmp/interclode-{name}.md \
   "Previous attempt failed because [reason]. [Updated, more specific prompt]"
@@ -275,7 +284,7 @@ Key flags for delegation:
 
 **Multi-directory tasks**: Use `--add-dir` when a task needs to write outside `-C`:
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   -C /path/to/project -o /tmp/out.md \
   --add-dir /path/to/shared-lib \
   "Fix the interface mismatch between project and shared-lib"
@@ -284,7 +293,7 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
 **New/unknown Codex flags**: dispatch.sh passes unknown `-*` flags through as boolean (no value). If the fetched docs show a new **boolean** flag (e.g., `--search`), it works automatically. For new **value** flags, you'll need to update dispatch.sh's passthrough list or call `codex exec` directly:
 ```bash
 # Boolean flag — works via dispatch.sh's catch-all
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   -C /path/to/project -o /tmp/out.md \
   --search "prompt here"
 
@@ -308,6 +317,7 @@ codex exec -C /path/to/project -o /tmp/out.md \
 | Background notifications arrive late | Don't wait for them — poll output files directly with `tail -c` |
 | Agent touches files outside scope | List files explicitly + "only modify listed files" in constraints |
 | Two agents conflict on same file | Check file overlap before dispatching (Step 2) |
+| Agent commits+pushes despite "do not commit" | Known Codex behavior with `danger-full-access` + `approval_policy=never`. Always `git status` after dispatch. Use `workspace-write` sandbox when possible — it may prevent push. |
 
 ## Integration with Clavain
 

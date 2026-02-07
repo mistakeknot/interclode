@@ -54,8 +54,14 @@ For each task, craft a detailed prompt that includes:
 
 Use `--inject-docs` to auto-prepend the project's CLAUDE.md to the prompt (Codex already reads AGENTS.md natively from the `-C` directory):
 
+**Resolve dispatch.sh path first** — `$CLAUDE_PLUGIN_ROOT` is NOT available in the Bash environment:
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+DISPATCH=$(find ~/.claude/plugins/cache -path '*/interclode/*/scripts/dispatch.sh' 2>/dev/null | head -1)
+[ -z "$DISPATCH" ] && DISPATCH=$(find ~/projects/interclode -name dispatch.sh -path '*/scripts/*' 2>/dev/null | head -1)
+```
+
+```bash
+bash $DISPATCH \
   --inject-docs -C /path/to/project \
   --name taskname -o /tmp/interclode-{name}.md \
   -s workspace-write \
@@ -67,7 +73,7 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
 Launch each Codex agent using the dispatch script:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
+bash $DISPATCH \
   --inject-docs -C /path/to/project \
   --name fix-bug -o /tmp/interclode-{name}.md \
   -s workspace-write \
