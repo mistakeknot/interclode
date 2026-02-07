@@ -152,24 +152,19 @@ bash $DISPATCH \
   "prompt for task 2"
 ```
 
-Use `run_in_background: true` on each Bash call and set `timeout: 600000` (10 minutes).
+Launch all Bash calls **in a single message** (multiple tool calls). They run concurrently and return together when all agents finish. Set `timeout: 600000` (10 minutes) on each call.
 
-### Step 5: Monitor
+Do NOT use `run_in_background: true` — it causes stale completion notifications that arrive long after you've already verified the results. Parallel tool calls in one message give you the same concurrency without the noise.
 
-Check progress every 60-90 seconds:
+### Step 5: Wait for Completion
+
+Since all agents were launched as parallel tool calls, they return together. No polling needed.
+
+If an agent times out (>10 min), check the output file and Codex session for clues:
 ```bash
 tail -c 2000 /tmp/interclode-fix-auth.md
+ls -lt ~/.codex/sessions/$(date +%Y/%m/%d)/
 ```
-
-Codex JSONL sessions are at `~/.codex/sessions/YYYY/MM/DD/`.
-
-Signs of completion:
-- Output file has substantive content (not just "thinking...")
-- The codex process is no longer running
-
-Signs of trouble:
-- Process running >5 minutes with no output growth
-- Test processes stuck at 0% CPU (may need `pkill`)
 
 ### Step 6: Verify
 
@@ -314,7 +309,6 @@ codex exec -C /path/to/project -o /tmp/out.md \
 | Agent over-engineers the fix | Add "keep it minimal" + "prefer N lines over M lines" to constraints |
 | Agent realigns whitespace | Add "do not reformat unchanged code" to constraints |
 | Agent runs wrong tests | Specify exact test command in success criteria, not just "run tests" |
-| Background notifications arrive late | Don't wait for them — poll output files directly with `tail -c` |
 | Agent touches files outside scope | List files explicitly + "only modify listed files" in constraints |
 | Two agents conflict on same file | Check file overlap before dispatching (Step 2) |
 | Agent commits+pushes despite "do not commit" | Known Codex behavior with `danger-full-access` + `approval_policy=never`. Always `git status` after dispatch. Use `workspace-write` sandbox when possible — it may prevent push. |

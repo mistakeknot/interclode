@@ -91,21 +91,11 @@ bash $DISPATCH \
 - `--dry-run`: Print the constructed command without executing (for debugging prompts)
 - `--help`: Show all options
 
-Launch multiple agents in parallel using `run_in_background: true` on each Bash call.
+Launch all agents as **parallel Bash tool calls in a single message** with `timeout: 600000`. Do NOT use `run_in_background` — it causes delayed notification spam.
 
-### 5. Monitor
+### 5. Verify Results
 
-Check agent progress by tailing output files:
-
-```bash
-tail -c 2000 /tmp/interclode-fix-bug.md
-```
-
-Codex sessions are also stored at `~/.codex/sessions/YYYY/MM/DD/` as JSONL files if you need the full transcript.
-
-### 6. Verify Results
-
-After agents complete, run the full verification checklist from the delegate skill:
+All agents return together (parallel tool calls). Run the full verification checklist from the delegate skill:
 1. Read output file
 2. Check compilation
 3. Run tests
@@ -115,7 +105,7 @@ After agents complete, run the full verification checklist from the delegate ski
 
 If an agent failed, either resume (`codex exec resume --last "fix X"`) or re-dispatch with tighter constraints. See the delegate skill for detailed retry guidance.
 
-### 7. Report and Close
+### 6. Report and Close
 
 Summarize results to the user:
 - What each agent accomplished

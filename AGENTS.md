@@ -140,8 +140,8 @@ The SKILL.md defines an 8-step workflow:
 1. **Identify Tasks** — Analyze work, propose task decomposition to user
 2. **Check File Overlap** — Ensure no two agents write the same file
 3. **Craft Prompts** — Use the standard template with mandatory constraints
-4. **Dispatch** — Launch agents via dispatch.sh with `run_in_background: true`
-5. **Monitor** — Poll output files with `tail -c 2000` every 60-90s
+4. **Dispatch** — Launch agents as parallel Bash tool calls in a single message (timeout: 600000)
+5. **Verify** — All agents return together; build, test, diff review for each
 6. **Verify** — Build, test, diff review, proportionality check for EACH agent
 7. **Report** — Summarize results with evidence, suggest commit message
 
@@ -221,7 +221,7 @@ codex exec review --uncommitted "focus on error handling"
 ## Known Issues
 
 - **ARG_MAX limit**: Very large prompts (>150KB) combined with large environment variables can exceed the kernel's ~2MB `execve()` limit. Use `--prompt-file` to keep the command line small, but the prompt content still needs to fit.
-- **No built-in parallelism**: dispatch.sh launches one agent per invocation. Parallelism is achieved by the caller using `run_in_background: true` on multiple Bash calls.
+- **No built-in parallelism**: dispatch.sh launches one agent per invocation. Parallelism is achieved by the caller issuing multiple Bash tool calls in a single message.
 - **Session transcript format**: Codex JSONL lines are 10-100KB each. Use `tail -c` (byte-based) not `tail -n` (line-based) when checking output.
 
 ## Release Process

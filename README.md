@@ -46,8 +46,8 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/dispatch.sh \
 1. **Analyze** — Identify discrete, well-scoped tasks
 2. **Check overlap** — Ensure no two agents touch the same files
 3. **Craft prompts** — Include file paths, success criteria, and constraints
-4. **Dispatch** — Launch Codex agents in parallel via `run_in_background: true`
-5. **Monitor** — Poll output files with `tail -c 2000`
+4. **Dispatch** — Launch Codex agents as parallel Bash tool calls in a single message
+5. **Verify** — Build, test, review diff when all agents return
 6. **Verify** — Build, test, review diff, check proportionality
 7. **Report** — Summarize results with evidence
 
