@@ -196,6 +196,51 @@ codex exec review --uncommitted "focus on error handling"
 ~/.codex/sessions/      # Session transcripts (YYYY/MM/DD/*.jsonl)
 ```
 
+## Codex-First Mode
+
+Codex-first mode is a session-level behavioral contract where Claude delegates **all code changes** to Codex agents, restricting itself to reading, planning, orchestrating, and verifying.
+
+### Activation
+
+1. **CLAUDE.md directive** (persistent, per-project):
+   ```markdown
+   ## Execution Mode
+   codex-first: true
+   ```
+   Claude reads this at session start and enters codex-first mode automatically.
+
+2. **Slash command** (session toggle):
+   `/clavain:clodex` (or `/clavain:codex-first`) — toggles the mode on/off, overriding the CLAUDE.md default.
+
+### How It Integrates with Interclode
+
+In codex-first mode, Claude uses two dispatch paths:
+
+| Path | When | Skill |
+|------|------|-------|
+| **Single-task dispatch** | One edit at a time (most common) | `clavain:codex-first-dispatch` |
+| **Multi-task parallel dispatch** | Executing a plan with 3+ independent tasks | `clavain:codex-delegation` -> `interclode:delegate` |
+
+Both paths use interclode's `dispatch.sh` as the underlying transport. The `codex-first-dispatch` skill is a lighter wrapper that skips multi-task planning and file overlap checks.
+
+### Behavioral Contract
+
+When codex-first is active, Claude:
+- **Never** uses Edit/Write/NotebookEdit on source code
+- **Always** reads freely (Read, Grep, Glob)
+- **Always** dispatches code changes through Codex agents
+- **Always** verifies (build, test, diff) before reporting success
+- **Always** handles git operations (add, commit, push) directly
+- **May** edit non-code files (docs, config, markdown) directly
+
+### Dispatch Flow
+
+```
+Claude: Read code -> Plan change -> Write prompt file -> Dispatch via dispatch.sh
+Codex:  Read AGENTS.md -> Implement change -> Report
+Claude: Read output -> Build -> Test -> Diff review -> Commit
+```
+
 ## Code Conventions
 
 - **Bash strict mode**: `set -euo pipefail` in dispatch.sh
