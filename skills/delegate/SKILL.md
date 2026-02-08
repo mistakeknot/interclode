@@ -83,7 +83,7 @@ You are working on [project name], a [brief description].
 
 ## Success Criteria
 - [ ] [Exact build command] succeeds
-- [ ] [Exact test command] passes
+- [ ] [SCOPED test command with -run/-short/-timeout] passes
 - [ ] [Specific behavior verified]
 
 ## Constraints (ALWAYS INCLUDE)
@@ -97,8 +97,26 @@ You are working on [project name], a [brief description].
 
 ## Environment
 - Run build with: [build command]
-- Run tests with: [test command]
+- Run tests with: [SCOPED test command — see below]
 ```
+
+**CRITICAL — Scope test commands**: Never tell a Codex agent to run a broad test suite like `go test ./...` or `pytest`. Integration tests that need live services will hang, and the agent will waste its entire timeout polling for completion. Always scope:
+
+```
+GOOD:  go test ./internal/tui/... -run TestGurgeh -v -timeout=60s
+GOOD:  go test ./pkg/autarch/... -v -short -timeout=60s
+GOOD:  pytest tests/unit/test_auth.py -v
+BAD:   go test ./... -v
+BAD:   go test ./internal/... -v
+BAD:   pytest
+```
+
+Rules for test commands in Codex prompts:
+- Use `-run TestPattern` to target specific test functions related to the task
+- Use `-short` to skip integration tests when available
+- Always set `-timeout=60s` (or appropriate limit) to prevent infinite hangs
+- Prefer package-level runs (`./pkg/foo/...`) over repo-wide (`./...`)
+- If unsure which tests are relevant, list the specific test files in the prompt
 
 **Tip**: Use `--inject-docs` on dispatch.sh to auto-prepend the project's CLAUDE.md to the prompt. This injects Claude Code-specific instructions that Codex wouldn't otherwise see (Codex already reads AGENTS.md natively from the `-C` directory, so injecting AGENTS.md is redundant):
 ```bash
@@ -302,7 +320,7 @@ codex exec -C /path/to/project -o /tmp/out.md \
 | Problem | Solution |
 |---------|----------|
 | GOCACHE permission denied | Add `GOCACHE=/tmp/go-build-cache` to prompt |
-| Agent test hangs | Some tests need live APIs; `pkill -f "test.binary"` |
+| Agent test hangs | **Scope your test command** — use `-run TestPattern`, `-short`, and `-timeout=60s`. Broad `go test ./...` will include integration tests that hang without live services. If already stuck: `pkill -f "go-test"` |
 | Agent closes its own beads | Fine — verify the bead is actually done |
 | Output file empty after completion | Check `~/.codex/sessions/` for the JSONL transcript |
 | Agent reformats unrelated code | Note in review; revert cosmetic changes if distracting |
